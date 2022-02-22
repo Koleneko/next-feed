@@ -1,6 +1,6 @@
 import React from "react";
 
-const PostPage: React.FC = () => {
+const UserProfile: React.FC = () => {
   return (
     <main>
       <h3>Edit Post</h3>
@@ -8,4 +8,4 @@ const PostPage: React.FC = () => {
   );
 };
 
-export default PostPage;
+export default UserProfile;
