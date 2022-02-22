@@ -23,12 +23,7 @@ import {
 import { useAppDispatch, useAppSelector } from "hooks/redux.hooks";
 import React, { useEffect } from "react";
 import { logout } from "store/features/user/actions";
-import {
-  ChevronDownIcon,
-  HamburgerIcon,
-  MoonIcon,
-  SunIcon,
-} from "@chakra-ui/icons";
+import { HamburgerIcon, MoonIcon, SunIcon } from "@chakra-ui/icons";
 
 // Top navbar
 const Navbar = () => {
@@ -90,7 +85,7 @@ const UserIsPresent: React.FC = () => {
           </Button>
         </HStack>
       ) : (
-        <DrawerMobileMenu />
+        <MobileMenu />
       )}
     </>
   );
