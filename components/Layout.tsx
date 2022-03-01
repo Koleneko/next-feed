@@ -1,6 +1,6 @@
 import Navbar from "components/Navbar";
-import { Component, FunctionComponent, ReactNode } from "react";
-import { Container } from "@chakra-ui/react";
+import { ReactNode } from "react";
+import { Box, Container } from "@chakra-ui/react";
 
 type LayoutProps = {
   children: ReactNode;
@@ -10,9 +10,9 @@ export const Layout = ({ children }: LayoutProps): JSX.Element => {
   return (
     <>
       <Navbar />
-      <Container maxW="2xl" overflow-y={"overlay"}>
+      <Box m={5} overflow-y={"overlay"}>
         <main>{children}</main>
-      </Container>
+      </Box>
     </>
   );
 };

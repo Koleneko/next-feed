@@ -5,10 +5,11 @@ import axios from "axios";
 export const login = createAsyncThunk(
   "auth/login",
   async (loginData: LoginData) => {
-    const res = await axios.post<LoginData>(
+    const res = await axios.post<UserInfo>(
       process.env.NEXT_PUBLIC_API + "auth/login",
       loginData
     );
+    localStorage.setItem("userToken", res.data.token);
 
     return res.data as UserInfo;
   }

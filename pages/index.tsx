@@ -1,6 +1,16 @@
 import Head from "next/head";
+import { Box, Stack } from "@chakra-ui/react";
+import { GetServerSideProps } from "next";
+import axios from "axios";
+import { Post } from "types/post";
+import UserProfilePost from "@/components/UserProfilePost";
+import React from "react";
 
-const Home = (): JSX.Element => {
+interface HomeProps {
+  posts: Post[];
+}
+
+const Home: React.FC<HomeProps> = ({ posts }): JSX.Element => {
   return (
     <div>
       <Head>
@@ -8,8 +18,33 @@ const Home = (): JSX.Element => {
         <meta name="description" content="Blog for everyone" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
+      <Box mx={[null, "10%"]}>
+        <Stack>
+          {posts.map((post) => (
+            <UserProfilePost {...post} key={post._id} />
+          ))}
+        </Stack>
+      </Box>
     </div>
   );
+};
+
+export type PostApiReq = {
+  total: number;
+  items: Post[];
+};
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  const res = await axios.get<PostApiReq>(
+    process.env.NEXT_PUBLIC_API + "posts"
+  );
+  const posts = res.data.items;
+
+  return {
+    props: {
+      posts,
+    },
+  };
 };
 
 export default Home;

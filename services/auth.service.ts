@@ -12,10 +12,6 @@ const login = (loginData: LoginData) => {
   return axios
     .post(process.env.NEXT_PUBLIC_API + "auth/login", loginData)
     .then((response) => {
-      if (response.data.accessToken) {
-        localStorage.setItem("user", JSON.stringify(response.data));
-      }
-
       return response.data;
     });
 };

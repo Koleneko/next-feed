@@ -2,19 +2,15 @@ import { useDisclosure } from "@chakra-ui/hooks";
 import Link from "next/link";
 import LoginModal from "./LoginModal";
 import {
-  Drawer,
   Button,
   Divider,
+  Drawer,
   DrawerBody,
   DrawerContent,
   DrawerOverlay,
   Flex,
   HStack,
   IconButton,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuList,
   Spacer,
   useColorMode,
   useMediaQuery,
@@ -24,12 +20,16 @@ import { useAppDispatch, useAppSelector } from "hooks/redux.hooks";
 import React, { useEffect } from "react";
 import { logout } from "store/features/user/actions";
 import { HamburgerIcon, MoonIcon, SunIcon } from "@chakra-ui/icons";
+import { useRouter } from "next/router";
+import { AppDispatch } from "store";
+import useMounted from "hooks/useMounted";
 
 // Top navbar
 const Navbar = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { userInfo, loading } = useAppSelector((state) => state.user);
   const dispatch = useAppDispatch();
+  const mounted = useMounted();
 
   useEffect(() => {
     if (loading === "success") {
@@ -55,8 +55,8 @@ const Navbar = () => {
         </Link>
 
         <Spacer />
-        {userInfo.username ? (
-          <UserIsPresent />
+        {mounted && userInfo.username ? (
+          <UserIsPresent username={userInfo.username} dispatch={dispatch} />
         ) : (
           <HStack>
             <ChangeThemeBtn size="lg" />
@@ -72,50 +72,39 @@ const Navbar = () => {
   );
 };
 
-const UserIsPresent: React.FC = () => {
+export const UserIsPresent: React.FC<{
+  username: string;
+  dispatch: AppDispatch;
+}> = ({ username, dispatch }) => {
+  const router = useRouter();
   const [isLargerThan560] = useMediaQuery("(min-width: 560px)");
-  const dispatch = useAppDispatch();
+  const goToProfile = () => router.push(`/users/${username}`);
+
   return (
     <>
       {isLargerThan560 ? (
         <HStack spacing={5}>
-          <Button>Мой профиль</Button>
+          <Button onClick={goToProfile}>Мой профиль</Button>
           <Button size="md" onClick={() => dispatch(logout())}>
             Выйти
           </Button>
+          <Button colorScheme="blue" onClick={() => router.push(`/create`)}>
+            Создать пост
+          </Button>
+          <ChangeThemeBtn />
         </HStack>
       ) : (
-        <MobileMenu />
+        <DrawerMobileMenu dispatch={dispatch} navigateToProfile={goToProfile} />
       )}
     </>
   );
 };
 
-const MobileMenu: React.FC = () => {
-  const dispatch = useAppDispatch();
-
-  return (
-    <Menu>
-      <MenuButton
-        as={IconButton}
-        aria-label="Options"
-        icon={<HamburgerIcon />}
-        variant="outline"
-      />
-      <MenuList>
-        <MenuItem>Мой профиль</MenuItem>
-        <MenuItem onClick={() => dispatch(logout())}>Выйти</MenuItem>
-        <MenuItem>
-          <ChangeThemeBtn />
-        </MenuItem>
-      </MenuList>
-    </Menu>
-  );
-};
-
-const DrawerMobileMenu: React.FC = () => {
+const DrawerMobileMenu: React.FC<{
+  dispatch: AppDispatch;
+  navigateToProfile: () => void;
+}> = ({ dispatch, navigateToProfile }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const dispatch = useAppDispatch();
 
   return (
     <>
@@ -131,7 +120,7 @@ const DrawerMobileMenu: React.FC = () => {
         <DrawerContent>
           <DrawerBody>
             <VStack spacing={2} alignItems={"stretch"}>
-              <Button>Мой профиль</Button>
+              <Button onClick={navigateToProfile}>Мой профиль</Button>
               <Button size="md" onClick={() => dispatch(logout())}>
                 Выйти
               </Button>

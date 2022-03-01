@@ -16,10 +16,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { CheckIcon, NotAllowedIcon } from "@chakra-ui/icons";
 import { debounce } from "debounce";
 import { registerValidationScheme } from "./validationSchemes";
-import {
-  checkEmailUniqueness,
-  checkUsernameUniqueness,
-} from "services/unique.service";
+import { checkTokenUniqueness } from "services/unique.service";
 import { useAppDispatch, useAppSelector } from "hooks/redux.hooks";
 import { registerUser } from "store/features/user/actions";
 
@@ -45,6 +42,7 @@ const RegistrationForm: React.FC = () => {
   const [usernameIcon, setUsernameIcon] = useState<Availability>(
     Availability.Unknown
   );
+
   const {
     register,
     handleSubmit,
@@ -56,6 +54,7 @@ const RegistrationForm: React.FC = () => {
     mode: "onBlur",
     resolver: yupResolver(registerValidationScheme),
   });
+
   const dispatch = useAppDispatch();
   const { loading } = useAppSelector((state) => state.user);
   const handleShowClick = () => setShow(!show);
@@ -67,14 +66,14 @@ const RegistrationForm: React.FC = () => {
   const usernameWatcher = watch("username");
 
   useEffect(() => {
-    emailWatcher && emailHandlerWithCallback(emailWatcher);
+    emailWatcher && debouncedEmailHandler(emailWatcher);
   }, [emailWatcher]);
 
   useEffect(() => {
-    usernameWatcher && usernameHandlerWithCallback(usernameWatcher);
+    usernameWatcher && debouncedUsernameHandler(usernameWatcher);
   }, [usernameWatcher]);
 
-  const emailHandlerWithCallback = useCallback(
+  const debouncedEmailHandler = useCallback(
     debounce(async (emailWatcher: string) => {
       const emailIsValid = await trigger("email");
       setEmailIcon(Availability.Processing);
@@ -82,7 +81,7 @@ const RegistrationForm: React.FC = () => {
         setEmailIcon(Availability.Unavailable);
         return;
       }
-      const isUnique = await checkEmailUniqueness(emailWatcher);
+      const isUnique = await checkTokenUniqueness({ email: emailWatcher });
       if (!isUnique) {
         setError("email", {
           message: "Пользователь с таким e-mail уже существует",
@@ -95,7 +94,7 @@ const RegistrationForm: React.FC = () => {
     []
   );
 
-  const usernameHandlerWithCallback = useCallback(
+  const debouncedUsernameHandler = useCallback(
     debounce(async (usernameWatcher: string) => {
       const usernameIsValid = await trigger("username");
       setUsernameIcon(Availability.Processing);
@@ -103,7 +102,9 @@ const RegistrationForm: React.FC = () => {
         setUsernameIcon(Availability.Unavailable);
         return;
       }
-      const isUnique = await checkUsernameUniqueness(usernameWatcher);
+      const isUnique = await checkTokenUniqueness({
+        username: usernameWatcher,
+      });
       if (!isUnique) {
         setError("username", {
           message: "Пользователь с таким ником уже существует",
@@ -127,19 +128,6 @@ const RegistrationForm: React.FC = () => {
       default:
         return null;
     }
-  };
-
-  const usernameCheckHandler = async (username: string) => {
-    setUsernameIcon(Availability.Processing);
-    const isUnique = await checkUsernameUniqueness(username);
-    if (!isUnique) {
-      setError("username", {
-        message: "Пользователь с таким ником уже существует",
-      });
-      setUsernameIcon(Availability.Unavailable);
-      return;
-    }
-    setUsernameIcon(Availability.Available);
   };
 
   return (
