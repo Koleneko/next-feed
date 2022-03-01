@@ -36,7 +36,7 @@ import { updatePost } from "services/postCreation.service";
 import useMounted from "hooks/useMounted";
 import CommentComponent from "@/components/Comment";
 import { Comment } from "types/post";
-import { log } from "util";
+import { useRouter } from "next/router";
 
 interface PostPageProps {
   post: Post;
@@ -46,10 +46,22 @@ interface PostPageProps {
 const PostPage: React.FC<PostPageProps> = ({ post, comments }) => {
   const [isRedactMode, setIsRedactMode] = useState<boolean>(false);
   const [commentText, setCommentText] = useState<string>("");
-
   const mounted = useMounted();
+  const router = useRouter();
   const userId = useAppSelector((state) => state.user.userInfo._id);
   const userToken = useAppSelector((state) => state.user.userInfo.token);
+
+  const handlePostDelete = () => {
+    axios
+      .delete(process.env.NEXT_PUBLIC_API + `posts/${post._id}`, {
+        headers: {
+          Authorization: userToken,
+        },
+      })
+      .then(() => {
+        router.push("/");
+      });
+  };
   const handleCommentSend = () => {
     axios
       .post(
@@ -89,7 +101,9 @@ const PostPage: React.FC<PostPageProps> = ({ post, comments }) => {
               >
                 Редактировать
               </Button>
-              <Button colorScheme="red">Удалить</Button>
+              <Button colorScheme="red" onClick={() => handlePostDelete()}>
+                Удалить
+              </Button>
             </>
           )}
         </ButtonGroup>
@@ -119,19 +133,12 @@ const PostPage: React.FC<PostPageProps> = ({ post, comments }) => {
           <Textarea
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
+            mb={5}
           />
-          <Button onClick={() => handleCommentSend}>Отправить</Button>
+          <Button mt={"5px"} onClick={() => handleCommentSend()}>
+            Отправить
+          </Button>
         </Box>
-        {comments.map((comment) => (
-          <CommentComponent
-            key={comment._id}
-            username={comment.user.username}
-            createdAt={comment.createdAt}
-            text={comment.text}
-            userId={comment.user._id}
-            commentId={comment._id}
-          />
-        ))}
       </Stack>
     </Box>
   );
