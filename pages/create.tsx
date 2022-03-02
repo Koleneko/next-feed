@@ -9,7 +9,6 @@ import {
   FormLabel,
   IconButton,
   Input,
-  Progress,
   Spinner,
   Stack,
   Textarea,
@@ -24,14 +23,11 @@ import { useRouter } from "next/router";
 import { useAppDispatch, useAppSelector } from "hooks/redux.hooks";
 import useMounted from "hooks/useMounted";
 import { createPost } from "store/features/posts/actions";
-import { Post } from "types/post";
-import { storage } from "../firebase/app";
+import { storage } from "firebase/app";
 import React, { useEffect, useState } from "react";
 import ChakraUIRenderer from "chakra-ui-markdown-renderer";
 import { getDownloadURL, ref, uploadBytes } from "@firebase/storage";
 import { checkSlugUniqueness } from "services/unique.service";
-import { slugParser } from "utils/slugParser";
-
 export interface IPostInputs {
   title: string;
   description: string;
@@ -52,7 +48,6 @@ const CreatePost = () => {
     handleSubmit,
     formState: { isSubmitting, errors },
     watch,
-    setError,
   } = useForm<IPostInputs>();
 
   const userInfo = useAppSelector((state) => state.user.userInfo);
@@ -148,7 +143,7 @@ const CreatePost = () => {
                 required: "Поле обязательно для заполнения",
                 minLength: { value: 3, message: "Минимум 3 символа" },
                 onBlur: async () => {
-                  const res = await checkSlugUniqueness(slug);
+                  checkSlugUniqueness(slug).then((r) => setSlugValue(r));
                 },
               })}
             />
