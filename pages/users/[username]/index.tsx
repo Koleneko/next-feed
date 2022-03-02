@@ -12,11 +12,11 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import UserProfilePost from "@/components/UserProfilePost";
-import CommentComponent from "@/components/Comment";
+import { CommentRender } from "@/components/Comment";
 import { Comment, Post } from "types/post";
 import { GetStaticPaths, GetStaticProps, InferGetStaticPropsType } from "next";
-import axios from "axios";
 import { useRouter } from "next/router";
+import axios from "axios";
 
 interface UserProfileData {
   id: string;
@@ -75,13 +75,13 @@ const UserProfile: React.FC<UserProfilePageProps> = ({
             <Stack>
               {userInfo.comments.items.length ? (
                 userInfo.comments.items.map((comment) => (
-                  <CommentComponent
+                  <CommentRender
                     key={comment._id}
-                    commentId={comment._id}
+                    commentText={comment.text}
                     username={comment.user.username}
-                    userId={userInfo.id}
-                    text={comment.text}
+                    isOwner={false}
                     createdAt={comment.createdAt}
+                    id={comment._id}
                   />
                 ))
               ) : (

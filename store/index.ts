@@ -6,19 +6,23 @@ import {
   wrapMakeStore,
 } from "next-redux-cookie-wrapper";
 import { postSlice } from "store/features/posts/reducer";
+import { commentsApi } from "store/features/api/comments";
 
 export const store = wrapMakeStore(() =>
   configureStore({
     reducer: {
+      [commentsApi.reducerPath]: commentsApi.reducer,
       user: userSlice.reducer,
       post: postSlice.reducer,
     },
     middleware: (getDefaultMiddleware) =>
-      getDefaultMiddleware().prepend(
-        nextReduxCookieMiddleware({
-          subtrees: [`${userSlice.name}.userInfo`],
-        })
-      ),
+      getDefaultMiddleware()
+        .concat(commentsApi.middleware)
+        .prepend(
+          nextReduxCookieMiddleware({
+            subtrees: [`${userSlice.name}.userInfo`],
+          })
+        ),
   })
 );
 export type AppStore = ReturnType<typeof store>;

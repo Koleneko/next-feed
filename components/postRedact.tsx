@@ -1,3 +1,7 @@
+import { Post } from "types/post";
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { IPostInputs } from "pages/create";
 import {
   Box,
   Button,
@@ -16,67 +20,40 @@ import {
   useClipboard,
   useToast,
 } from "@chakra-ui/react";
-import ReactMarkdown from "react-markdown";
-import { useForm } from "react-hook-form";
-import { AddIcon, CopyIcon, QuestionOutlineIcon } from "@chakra-ui/icons";
-import { useRouter } from "next/router";
-import { useAppDispatch, useAppSelector } from "hooks/redux.hooks";
-import useMounted from "hooks/useMounted";
-import { createPost } from "store/features/posts/actions";
-import { storage } from "../firebase/app";
-import React, { useEffect, useState } from "react";
-import ChakraUIRenderer from "chakra-ui-markdown-renderer";
+import { useAppSelector } from "hooks/redux.hooks";
 import { getDownloadURL, ref, uploadBytes } from "@firebase/storage";
-import { checkSlugUniqueness } from "services/unique.service";
-export interface IPostInputs {
-  title: string;
-  description: string;
-  text: string;
-  slug: string;
-  photoUrl?: string;
+import { storage } from "firebase/app";
+import { updatePost } from "services/postCreation.service";
+import { AddIcon, CopyIcon, QuestionOutlineIcon } from "@chakra-ui/icons";
+import ReactMarkdown from "react-markdown";
+import ChakraUIRenderer from "chakra-ui-markdown-renderer";
+
+interface RedactProps {
+  post: Post;
+  userId: string;
 }
 
-const CreatePost = () => {
-  const [showPreview, setShowPreview] = useState<boolean>(false);
-  const [imageIsUploading, setImageIsUploading] = useState<boolean>(false);
-  const [downloadUrl, setDownloadUrl] = useState<string>("");
-  const [slugValue, setSlugValue] = useState<string>("");
-  const { onCopy } = useClipboard(`![alt](${downloadUrl})`);
-
+const RedactPost: React.FC<RedactProps> = ({ post, userId }) => {
   const {
     register,
-    handleSubmit,
-    formState: { isSubmitting, errors },
     watch,
-  } = useForm<IPostInputs>();
-
-  const userInfo = useAppSelector((state) => state.user.userInfo);
-  const postUploadStatus = useAppSelector((state) => state.post.status);
-
-  const router = useRouter();
+    handleSubmit,
+    formState: { errors },
+  } = useForm<IPostInputs>({
+    defaultValues: {
+      title: post.title,
+      description: post.description,
+      text: post.text,
+    },
+  });
+  const [showPreview, setShowPreview] = useState<boolean>(false);
+  const [downloadUrl, setDownloadUrl] = useState<string>("");
+  const [imageIsUploading, setImageIsUploading] = useState<boolean>(false);
   const toast = useToast();
-  const mounted = useMounted();
-  const dispatch = useAppDispatch();
+  const { onCopy } = useClipboard(`![alt](${downloadUrl})`);
+  const userToken = useAppSelector((state) => state.user.userInfo.token);
 
-  if (!userInfo && mounted) {
-    toast({ description: "Чтобы написать пост нужно зайти в аккаунт" });
-    router.replace("/");
-  }
-
-  useEffect(() => {
-    switch (postUploadStatus) {
-      case "error": {
-        toast({
-          status: "error",
-          description: "Что-то пошло не так",
-        });
-        return;
-      }
-      case "success": {
-        router.push(`/users/${userInfo.username}/${slugValue}`);
-      }
-    }
-  }, [postUploadStatus]);
+  const textWatcher = watch("text");
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -87,7 +64,7 @@ const CreatePost = () => {
 
       const fileRef = ref(
         storage,
-        `uploads/${userInfo._id}/${Date.now()}.${extension}`
+        `uploads/${userId}/${Date.now()}.${extension}`
       );
       setImageIsUploading(true);
 
@@ -108,12 +85,20 @@ const CreatePost = () => {
     }
   };
 
-  const textWatcher = watch("text");
-  const slug = watch("title");
+  const onSubmit = async (data: IPostInputs) => {
+    const dataToSend = {
+      ...data,
+      slug: post.slug,
+    };
+    const res = await updatePost(dataToSend, post._id, userToken);
 
-  const onSubmit = (data: IPostInputs) => {
-    data.slug = slugValue;
-    dispatch(createPost(data));
+    if (res) {
+      toast({
+        status: "success",
+        description:
+          "Успешно обновили пост, информация на платформе обновится меньше чем через минуту",
+      });
+    }
   };
 
   return (
@@ -142,14 +127,8 @@ const CreatePost = () => {
               {...register("title", {
                 required: "Поле обязательно для заполнения",
                 minLength: { value: 3, message: "Минимум 3 символа" },
-                onBlur: async () => {
-                  checkSlugUniqueness(slug).then((r) => setSlugValue(r));
-                },
               })}
             />
-            <FormLabel>
-              {slugValue ? `Короткая ссылка на ваш пост: ${slugValue}` : ""}
-            </FormLabel>
           </FormControl>
           <FormControl>
             <FormLabel>Введите краткое описание статьи</FormLabel>
@@ -205,7 +184,7 @@ const CreatePost = () => {
               <QuestionOutlineIcon alignSelf={"end"} />
             </Tooltip>
             {showPreview ? (
-              <Container maxW={[null, "container.md"]}>
+              <Container maxW="container.md">
                 <ReactMarkdown components={ChakraUIRenderer()} skipHtml>
                   {textWatcher}
                 </ReactMarkdown>
@@ -233,8 +212,8 @@ const CreatePost = () => {
             )}
           </Flex>
           <ButtonGroup>
-            <Button type={"submit"} disabled={isSubmitting} colorScheme="blue">
-              Опубликовать
+            <Button type={"submit"} colorScheme="blue">
+              Сохранить изменения
             </Button>
             <Button onClick={() => setShowPreview((prev) => !prev)}>
               {showPreview ? "Редактировать" : "Предпросмотр"}
@@ -246,4 +225,4 @@ const CreatePost = () => {
   );
 };
 
-export default CreatePost;
+export default RedactPost;

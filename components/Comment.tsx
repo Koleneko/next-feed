@@ -6,71 +6,119 @@ import {
   Divider,
   Text,
   Textarea,
-  useToast,
   VStack,
 } from "@chakra-ui/react";
-import axios from "axios";
 import { useAppSelector } from "hooks/redux.hooks";
+import {
+  useGetCommentsByPostIdQuery,
+  useCreateCommentMutation,
+  useDeleteCommentMutation,
+  useUpdateCommentMutation,
+} from "store/features/api/comments";
+import { useForm } from "react-hook-form";
 
 interface ICommentProps {
-  username: string;
-  createdAt: string;
-  text: string;
-  userId: string;
-  commentId: string;
+  postId: string;
 }
 
-const CommentComponent: React.FC<ICommentProps> = ({
-  username,
-  createdAt,
-  text,
-  commentId,
-}) => {
-  const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [commentText, setCommentText] = useState<string>(text);
+interface CreateCommentInput {
+  text: string;
+}
 
-  const userToken = useAppSelector((state) => state.user.userInfo.token);
-  const toast = useToast();
+const CommentComponent: React.FC<ICommentProps> = ({ postId }) => {
+  const { data, error, isLoading } = useGetCommentsByPostIdQuery(postId);
+  const [createComment, result] = useCreateCommentMutation();
+  const [deleteComment] = useDeleteCommentMutation();
+  const [updateComment] = useUpdateCommentMutation();
+  const { register, handleSubmit } = useForm<CreateCommentInput>();
 
-  const handleCommentChange = () => {
-    axios
-      .patch(
-        process.env.NEXT_PUBLIC_API + `comments/${commentId}`,
-        {
-          text: commentText,
-        },
-        {
-          headers: {
-            Authorization: userToken,
-          },
-        }
-      )
-      .then(() =>
-        toast({
-          status: "success",
-          description: "Успешно обновили комментарий",
-        })
-      )
-      .catch((e) => {
-        toast({
-          status: "error",
-          description: e.message,
-        });
-      });
+  const userId = useAppSelector((state) => state.user.userInfo._id);
+
+  const handleCommentSend = (data: CreateCommentInput) => {
+    createComment({
+      text: data.text,
+      id: postId,
+    });
   };
 
-  const handleCommentDelete = () => {
-    if (confirm("Вы действительно хотите удалить комментарий?")) {
-      axios
-        .delete(process.env.NEXT_PUBLIC_API + `comments/${commentId}`, {
-          headers: {
-            Authorization: userToken,
-          },
-        })
-        .catch((e) => {
-          console.log(e);
-        });
-    }
+  if (isLoading)
+    return <Text fontWeight={"bold"}>Загружаем комментарии..</Text>;
+
+  return (
+    <>
+      {data?.length ? (
+        data.map((comment) => (
+          <CommentRender
+            key={comment._id}
+            commentText={comment.text}
+            username={comment.user.username}
+            isOwner={userId === comment.user._id}
+            createdAt={comment.createdAt}
+            id={comment._id}
+            onDelete={deleteComment}
+            onChange={updateComment}
+          />
+        ))
+      ) : (
+        <Text fontWeight={"bold"} fontSize={"xl"} mt={5}>
+          Комментариев пока нет, будьте первыми!
+        </Text>
+      )}
+      <Box w={["100%", "60%"]}>
+        <Text>Оставьте свой комментарий</Text>
+        <Textarea
+          {...register("text", {
+            minLength: 5,
+          })}
+          mb={5}
+        />
+        <Button
+          mt={"5px"}
+          onClick={handleSubmit(handleCommentSend)}
+          disabled={!userId}
+        >
+          Отправить
+        </Button>
+      </Box>
+    </>
+  );
+};
+
+export default CommentComponent;
+
+interface CommentRenderProps {
+  username: string;
+  createdAt: string;
+  commentText: string;
+  isOwner: boolean;
+  id: string;
+  onDelete?: any;
+  onChange?: any;
+}
+
+export const CommentRender: React.FC<CommentRenderProps> = ({
+  username,
+  createdAt,
+  commentText,
+  isOwner,
+  id,
+  onChange,
+  onDelete,
+}) => {
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const { register, handleSubmit } = useForm({
+    defaultValues: { text: commentText },
+  });
+
+  const handleDelete = () => {
+    onDelete({ id });
+  };
+
+  const handleUpdate = (data: any) => {
+    onChange({
+      id,
+      text: data.text,
+    });
   };
 
   return (
@@ -91,11 +139,12 @@ const CommentComponent: React.FC<ICommentProps> = ({
         alignSelf={"flex-end"}
         mb={5}
         p={0}
+        hidden={!isOwner}
       >
         <Button onClick={() => setIsEditing((prev) => !prev)}>
           Редактировать
         </Button>
-        <Button onClick={() => handleCommentDelete()}>Удалить</Button>
+        <Button onClick={handleDelete}>Удалить</Button>
       </ButtonGroup>
 
       <VStack alignItems={"flex-start"} spacing={0}>
@@ -108,10 +157,11 @@ const CommentComponent: React.FC<ICommentProps> = ({
       ) : (
         <>
           <Textarea
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
+            {...register("text", {
+              minLength: 2,
+            })}
           />
-          <Button size="xs" mt={2} onClick={handleCommentChange}>
+          <Button size="xs" mt={2} onClick={handleSubmit(handleUpdate)}>
             Сохранить
           </Button>
         </>
@@ -119,5 +169,3 @@ const CommentComponent: React.FC<ICommentProps> = ({
     </Box>
   );
 };
-
-export default CommentComponent;
