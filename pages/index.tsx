@@ -1,6 +1,6 @@
 import Head from "next/head";
 import { Box, Stack } from "@chakra-ui/react";
-import { GetServerSideProps } from "next";
+import { GetStaticProps } from "next";
 import axios from "axios";
 import { Post } from "types/post";
 import UserProfilePost from "@/components/UserProfilePost";
@@ -34,7 +34,7 @@ export type PostApiReq = {
   items: Post[];
 };
 
-export const getServerSideProps: GetServerSideProps = async () => {
+export const getStaticProps: GetStaticProps = async () => {
   const res = await axios.get<PostApiReq>(
     process.env.NEXT_PUBLIC_API + "posts"
   );
@@ -44,8 +44,8 @@ export const getServerSideProps: GetServerSideProps = async () => {
     props: {
       posts,
     },
+    revalidate: 10,
   };
 };
 
 export default Home;
-// export default withLayout(Home);
