@@ -33,7 +33,7 @@ export const checkSlugUniqueness = async (slug: string): Promise<string> => {
       return slugToSend;
     }
   } catch (e) {
-    checkSlugUniqueness(slug);
+    await checkSlugUniqueness(slug);
   }
   return slugToSend;
 };
