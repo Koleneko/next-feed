@@ -79,6 +79,7 @@ export const UserIsPresent: React.FC<{
   const router = useRouter();
   const [isLargerThan560] = useMediaQuery("(min-width: 560px)");
   const goToProfile = () => router.push(`/users/${username}`);
+  const goToCreate = () => router.push(`/create`);
 
   return (
     <>
@@ -88,13 +89,17 @@ export const UserIsPresent: React.FC<{
           <Button size="md" onClick={() => dispatch(logout())}>
             Выйти
           </Button>
-          <Button colorScheme="blue" onClick={() => router.push(`/create`)}>
+          <Button colorScheme="blue" onClick={goToCreate}>
             Создать пост
           </Button>
           <ChangeThemeBtn />
         </HStack>
       ) : (
-        <DrawerMobileMenu dispatch={dispatch} navigateToProfile={goToProfile} />
+        <DrawerMobileMenu
+          dispatch={dispatch}
+          navigateToProfile={goToProfile}
+          navigateToCreate={goToCreate}
+        />
       )}
     </>
   );
@@ -103,7 +108,8 @@ export const UserIsPresent: React.FC<{
 const DrawerMobileMenu: React.FC<{
   dispatch: AppDispatch;
   navigateToProfile: () => void;
-}> = ({ dispatch, navigateToProfile }) => {
+  navigateToCreate: () => void;
+}> = ({ dispatch, navigateToProfile, navigateToCreate }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   return (
@@ -121,6 +127,9 @@ const DrawerMobileMenu: React.FC<{
           <DrawerBody>
             <VStack spacing={2} alignItems={"stretch"}>
               <Button onClick={navigateToProfile}>Мой профиль</Button>
+              <Button colorScheme="blue" onClick={navigateToCreate}>
+                Создать пост
+              </Button>
               <Button size="md" onClick={() => dispatch(logout())}>
                 Выйти
               </Button>
